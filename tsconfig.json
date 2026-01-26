@@ -37,8 +37,6 @@
     "**/*.mts"
   ],
   "exclude": [
-    "node_modules",
-    "daily-logistics-system",
-    "deployment_source"
+    "node_modules"
   ]
 }

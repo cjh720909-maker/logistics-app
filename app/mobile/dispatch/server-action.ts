@@ -53,12 +53,15 @@ export async function getRealDispatchData(searchTerm: string, dateStr?: string):
 
   if (!targetDateStr) {
     const now = new Date();
-    const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-    const kstGap = 9 * 60 * 60 * 1000;
-    const todayKST = new Date(utc + kstGap);
-    const y = todayKST.getFullYear();
-    const m = String(todayKST.getMonth() + 1).padStart(2, '0');
-    const d = String(todayKST.getDate()).padStart(2, '0');
+    const kstNow = new Date(now.getTime() + (now.getTimezoneOffset() * 60000) + (9 * 60 * 60 * 1000));
+
+    if (kstNow.getHours() >= 18) {
+      kstNow.setDate(kstNow.getDate() + 1);
+    }
+
+    const y = kstNow.getFullYear();
+    const m = String(kstNow.getMonth() + 1).padStart(2, '0');
+    const d = String(kstNow.getDate()).padStart(2, '0');
     targetDateStr = `${y}-${m}-${d}`;
   }
 
@@ -178,7 +181,8 @@ export async function getRealDispatchData(searchTerm: string, dateStr?: string):
     // If searching, show all matches.
     let finalResult = result;
     if (!searchTerm || searchTerm.trim() === '') {
-      finalResult = result.slice(0, 10);
+      // [수정] 초기 화면에서는 결품(missingQty > 0)이 발생한 거래처만 필터링하여 표시
+      finalResult = result.filter(group => group.items.some(it => it.missingQty > 0));
     }
 
     return {

@@ -12,10 +12,18 @@ export default function App() {
   // 날짜 설정 (KST 기준 오늘 날짜)
   const [selectedDate, setSelectedDate] = useState(() => {
     const now = new Date();
-    const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-    const kstGap = 9 * 60 * 60 * 1000;
-    const todayKST = new Date(utc + kstGap);
-    return todayKST.toISOString().split('T')[0];
+    // KST 시간 계산 (UTC + 9시간)
+    const kstNow = new Date(now.getTime() + (now.getTimezoneOffset() * 60000) + (9 * 60 * 60 * 1000));
+
+    // 오후 6시(18시) 이후면 다음 날짜로 설정
+    if (kstNow.getHours() >= 18) {
+      kstNow.setDate(kstNow.getDate() + 1);
+    }
+
+    const y = kstNow.getFullYear();
+    const m = String(kstNow.getMonth() + 1).padStart(2, '0');
+    const d = String(kstNow.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
   });
 
   const [dispatchList, setDispatchList] = useState<DispatchGroup[]>([]);
