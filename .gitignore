@@ -49,3 +49,11 @@ next-env.d.ts
 # build context
 deployment_source/
 daily-logistics-system/node_modules/
+
+# prisma generated clients
+/lib/generated/
+
+# local sqlite db
+/prisma/auth/auth.db
+*.db
+*.db-journal

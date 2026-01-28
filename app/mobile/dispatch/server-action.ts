@@ -1,13 +1,7 @@
 'use server';
 
-import { PrismaClient } from '@prisma/client';
+import { logisticsDb as prisma } from '../../../lib/db';
 import iconv from 'iconv-lite';
-
-const globalForPrisma = global as unknown as { prisma: PrismaClient };
-const prisma = globalForPrisma.prisma || new PrismaClient({
-  log: ['query', 'error', 'warn'],
-});
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
 
 function fromLegacy(str: string | null | undefined): string {
   if (!str) return '';
@@ -41,6 +35,11 @@ export interface DispatchGroup {
 }
 
 import { getSession } from '../../../lib/auth';
+
+export async function getUserInfo() {
+  const session = await getSession();
+  return { username: session?.username || null };
+}
 
 export async function getRealDispatchData(searchTerm: string, dateStr?: string): Promise<{ data: DispatchGroup[], totalCount: number, error?: string }> {
   const session = await getSession();
@@ -88,7 +87,9 @@ export async function getRealDispatchData(searchTerm: string, dateStr?: string):
       // Prisma implicit AND is top level.
       whereCondition.OR = [
         { customerName: { contains: legacySearch } },
-        { customerCode: { contains: legacySearch } }
+        { customerCode: { contains: legacySearch } },
+        { driverName: { contains: legacySearch } },
+        { vehicle: { realDriverName: { contains: legacySearch } } }
       ];
     }
 
@@ -181,8 +182,15 @@ export async function getRealDispatchData(searchTerm: string, dateStr?: string):
     // If searching, show all matches.
     let finalResult = result;
     if (!searchTerm || searchTerm.trim() === '') {
-      // [수정] 초기 화면에서는 결품(missingQty > 0)이 발생한 거래처만 필터링하여 표시
-      finalResult = result.filter(group => group.items.some(it => it.missingQty > 0));
+      // [수정] 결품(missingQty > 0)이 발생한 거래처를 우선적으로 필터링
+      const missingOnly = result.filter(group => group.items.some(it => it.missingQty > 0));
+
+      // 결품된 거래처가 있으면 해당 리스트를 보여주고, 없으면 전체 중 상위 10개만 표시하여 빈 화면 방지
+      if (missingOnly.length > 0) {
+        finalResult = missingOnly;
+      } else {
+        finalResult = result.slice(0, 10);
+      }
     }
 
     return {

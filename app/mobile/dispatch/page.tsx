@@ -4,10 +4,17 @@ import React, { useState, useCallback, useEffect } from 'react';
 import {
   Phone, Search, Truck, User, MapPin, ChevronRight, Package, Calendar, X, Loader2, ChevronLeft, Box, Scale, AlertCircle, ArrowLeft
 } from 'lucide-react';
-import { getRealDispatchData, type DispatchGroup, logoutAction } from './server-action';
+import { getRealDispatchData, getUserInfo, type DispatchGroup, logoutAction } from './server-action';
+import Link from 'next/link';
 
 export default function App() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [currentUser, setCurrentUser] = useState<string | null>(null);
+
+  // 현재 사용자 정보 가져오기
+  useEffect(() => {
+    getUserInfo().then(info => setCurrentUser(info.username));
+  }, []);
 
   // 날짜 설정 (KST 기준 오늘 날짜)
   const [selectedDate, setSelectedDate] = useState(() => {
@@ -164,6 +171,14 @@ export default function App() {
             </h1>
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold bg-blue-700 px-2.5 py-1 rounded-full">{selectedDate}</span>
+              {currentUser === 'admin' && (
+                <Link
+                  href="/admin/users"
+                  className="text-xs bg-white text-blue-600 hover:bg-blue-50 px-2.5 py-1 rounded-full font-bold transition-colors"
+                >
+                  아이디 관리
+                </Link>
+              )}
               <form action={logoutAction}>
                 <button type="submit" className="text-xs bg-blue-800 hover:bg-blue-700 text-blue-100 px-2.5 py-1 rounded-full font-bold transition-colors">
                   로그아웃

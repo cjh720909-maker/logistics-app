@@ -1,5 +1,6 @@
 generator client {
   provider = "prisma-client-js"
+  output   = "../../lib/generated/logistics"
   binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
@@ -24,36 +25,32 @@ model Order {
   driverName      String?  @map("CB_DRIVER") 
   deliveryPointId Int?     @map("CB_IDX")
 
-  
-  // [New] 회사 구분 컬럼 (유저 요청: t_balju c_name)
+  // 회사 구분 컬럼
   companyNameInTable String? @map("C_NAME")
 
   // 관계 설정
   vehicle         Vehicle? @relation(fields: [driverName], references: [driverName])
   deliveryPoint   DeliveryPoint? @relation(fields: [deliveryPointId], references: [id])
   
-  // [핵심] 미출(결품) 테이블 연결
+  // 미출(결품) 테이블 연결
   missouts        Missout[]
 
   @@map("t_balju")
 }
 
-// 2. [신규] 미출 현황 테이블 (t_missout)
-// 이 테이블에 데이터가 있으면 '결품'입니다.
 model Missout {
   id        Int     @id @default(autoincrement()) @map("MO_IDX")
   orderId   Int?    @map("B_IDX")
-  qty       Int     @default(0) @map("B_QTY") // 미출 수량
+  qty       Int     @default(0) @map("B_QTY")
   
   order     Order?  @relation(fields: [orderId], references: [id])
 
   @@map("t_missout")
 }
 
-// 3. 차량/기사 정보 (t_car)
 model Vehicle {
   driverName  String  @unique @map("CB_DRIVER") 
-  realDriverName String? @map("CA_NAME") // 실제 기사 성명
+  realDriverName String? @map("CA_NAME")
   vehicleNo   String? @map("CA_NO")      
   driverPhone String? @map("CA_HP")      
   dockNo      String? @map("CA_DOCKNO") 
@@ -63,27 +60,15 @@ model Vehicle {
   @@map("t_car")
 }
 
-// 4. 배송지 정보 (t_cust_bae)
 model DeliveryPoint {
   id          Int     @id @default(autoincrement()) @map("CB_IDX")
-  name        String? @map("CB_NAME")   // 납품처명
-  defaultDriver String? @map("CB_DRIVER") // 고정 기사
-  code        String? @map("CB_CODE")   // 코드
+  name        String? @map("CB_NAME")
+  defaultDriver String? @map("CB_DRIVER")
+  code        String? @map("CB_CODE")
   routingBind String? @map("CB_BIND") 
   address     String? @map("CB_ADDRESS") 
 
   orders      Order[]
 
   @@map("t_cust_bae")
-}
-
-// 5. [신규] 사용자/로그인 정보 (t_user)
-model User {
-  id          Int      @id @default(autoincrement()) @map("U_IDX")
-  username    String   @unique @map("U_ID")
-  password    String   @map("U_PW")
-  companyName String?  @map("U_COMPANY") // "하회", "대상" 등 (UTF-8)
-  createdAt   DateTime @default(now()) @map("U_CREATED_AT")
-
-  @@map("t_user")
 }
