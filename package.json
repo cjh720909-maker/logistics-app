@@ -9,7 +9,7 @@
     "lint": "next lint",
     "generate": "npx prisma generate --schema=./prisma/auth/schema.prisma && npx prisma generate --schema=./prisma/logistics/schema.prisma",
     "generate:prod": "npx prisma generate --schema=./prisma/auth/schema.postgresql.prisma && npx prisma generate --schema=./prisma/logistics/schema.prisma",
-    "postinstall": "if [ \"$VERCEL\" = \"1\" ]; then npm run generate:prod; else npm run generate; fi"
+    "postinstall": "node scripts/postinstall.js"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
