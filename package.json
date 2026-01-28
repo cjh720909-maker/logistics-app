@@ -37,6 +37,7 @@
     "typescript": "^5"
   },
   "prisma": {
+    "schema": "prisma/logistics/schema.prisma",
     "seed": "tsx prisma/seed.ts"
   }
 }
