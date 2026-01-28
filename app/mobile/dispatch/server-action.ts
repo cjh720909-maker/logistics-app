@@ -69,13 +69,12 @@ export async function getRealDispatchData(searchTerm: string, dateStr?: string):
       date: targetDateStr,
     };
 
-    // [New] Filter by Company if not admin
-    if (session.companyName) {
-      // User clarified: t_balju.c_name holds the company data (e.g. '하회', '대상')
-      // Map session.companyName to this column.
-      const legacyCompanyName = toLegacy(session.companyName);
+    // [수정] 관리자 또는 내부 직원은 전체 데이터를 볼 수 있어야 함
+    const isInternal = session.username === 'admin' || session.companyName === '관리자' || !session.companyName;
 
-      // Filter by the specific company column
+    if (!isInternal) {
+      // 외부 협력사만 본인 데이터로 제한
+      const legacyCompanyName = toLegacy(session.companyName);
       whereCondition.companyNameInTable = { contains: legacyCompanyName };
     }
 
