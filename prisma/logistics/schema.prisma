@@ -6,7 +6,7 @@ generator client {
 
 datasource db {
   provider = "mysql"
-  url      = env("DATABASE_URL")
+  url      = env("MYSQL_DATABASE_URL")
 }
 
 // 1. 발주/주문 테이블 (t_balju)
