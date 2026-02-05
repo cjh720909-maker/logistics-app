@@ -32,16 +32,10 @@ export default async function AdminLayout({
           <Link href="/admin/users" className="flex items-center gap-3 px-3 py-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors text-sm font-medium">
             <Users className="h-4 w-4" /> 계정 관리
           </Link>
-          
-          <div className="pt-4 pb-2 px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">배차 및 정산</div>
+
+          <div className="pt-4 pb-2 px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">배차 및 기사 관리</div>
           <Link href="/admin/vehicles" className="flex items-center gap-3 px-3 py-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors text-sm font-medium">
             <Truck className="h-4 w-4" /> 용차/기사 관리
-          </Link>
-          <Link href="/admin/vehicle-rates" className="flex items-center gap-3 px-3 py-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors text-sm font-medium">
-            <Calculator className="h-4 w-4" /> 용차 단가 설정
-          </Link>
-          <Link href="/admin/dispatch-report" className="flex items-center gap-3 px-3 py-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors text-sm font-medium">
-            <FileText className="h-4 w-4" /> 용차 정산 리포트
           </Link>
         </nav>
       </aside>
