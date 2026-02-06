@@ -125,6 +125,24 @@ export async function getRealDispatchData(searchTerm: string, dateStr?: string):
       orderBy: { id: 'asc' }
     });
 
+    // [추가] 기사 마스터 정보(VehicleInfo)에서 실제 연락처 매핑용 데이터 가져오기
+    const { authDb } = await import('../../../lib/db');
+    const vehicleInfos = await authDb.vehicleInfo.findMany({
+      select: {
+        driverName: true,
+        phoneNumber: true,
+        vehicleType: true
+      }
+    });
+
+    // 검색 최적화를 위해 Map으로 변환
+    const driverPhoneMap = new Map<string, string>();
+    vehicleInfos.forEach(info => {
+      if (info.phoneNumber) {
+        driverPhoneMap.set(info.driverName, info.phoneNumber);
+      }
+    });
+
     const groupedMap = new Map<string, DispatchGroup>();
 
     for (const order of rawOrders) {
@@ -134,9 +152,10 @@ export async function getRealDispatchData(searchTerm: string, dateStr?: string):
       // [최적화] 기사명 표시: 조인 없이 CB_DRIVER 직접 사용
       const drvName = fromLegacy(order.driverName) || '미지정';
 
-      // [최적화] 연락처 및 주소: t_balju의 CB_HP, CB_PHONE, CB_ADDRESS 직접 사용
-      const drvPhone = fromLegacy(order.hp) || fromLegacy(order.phone) || '';
-      const vNo = ''; // 차량번호가 t_balju에 직접 노출되지 않는 경우 빈값 처리 (필요시 추후 필드 확인)
+      // [수정] 연락처: VehicleInfo 마스터 정보를 최우선으로, 없으면 발주 정보 사용
+      const drvPhone = driverPhoneMap.get(drvName) || fromLegacy(order.hp) || fromLegacy(order.phone) || '';
+
+      const vNo = ''; // 차량번호
       const dNo = '';
       const cCode = fromLegacy(order.routingBind) || fromLegacy(order.customerCode) || 'N/A';
       const drvAddress = fromLegacy(order.address) || '';
