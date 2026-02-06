@@ -121,6 +121,7 @@ export async function getRealDispatchData(searchTerm: string, dateStr?: string):
       where: whereCondition,
       include: {
         missouts: true,
+        vehicle: true, // [추가] t_car 테이블 조인
       },
       orderBy: { id: 'asc' }
     });
@@ -152,11 +153,15 @@ export async function getRealDispatchData(searchTerm: string, dateStr?: string):
       // [최적화] 기사명 표시: 조인 없이 CB_DRIVER 직접 사용
       const drvName = fromLegacy(order.driverName) || '미지정';
 
-      // [수정] 연락처: VehicleInfo 마스터 정보를 최우선으로, 없으면 발주 정보 사용
-      const drvPhone = driverPhoneMap.get(drvName) || fromLegacy(order.hp) || fromLegacy(order.phone) || '';
+      // [수정] 연락처 우선순위: 
+      // 1. VehicleInfo (관리자 수기 등록)
+      // 2. t_car.CA_HP (기사 마스터 정보)
+      // 3. t_balju.CB_HP/PHONE (납품처 번호 - 최후의 수단)
+      const masterPhone = (order as any).vehicle ? fromLegacy((order as any).vehicle.driverPhone) : '';
+      const drvPhone = driverPhoneMap.get(drvName) || masterPhone || fromLegacy(order.hp) || fromLegacy(order.phone) || '';
 
-      const vNo = ''; // 차량번호
-      const dNo = '';
+      const vNo = (order as any).vehicle ? fromLegacy((order as any).vehicle.vehicleNo) : '';
+      const dNo = (order as any).vehicle ? fromLegacy((order as any).vehicle.dockNo) : '';
       const cCode = fromLegacy(order.routingBind) || fromLegacy(order.customerCode) || 'N/A';
       const drvAddress = fromLegacy(order.address) || '';
 
