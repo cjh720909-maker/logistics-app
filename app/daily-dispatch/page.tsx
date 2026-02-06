@@ -170,7 +170,14 @@ export default function DailyDispatchPage() {
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1 sm:gap-2">
+                            <Link
+                                href="/mobile/dispatch"
+                                className="mr-1 sm:mr-2 bg-slate-800 text-slate-200 px-3 py-1.5 rounded-xl text-[11px] font-bold hover:bg-slate-700 transition-colors border border-slate-700/50"
+                            >
+                                결품 조회
+                            </Link>
+
                             {user?.username === 'admin' && (
                                 <Link
                                     href="/admin/users"
@@ -183,7 +190,7 @@ export default function DailyDispatchPage() {
                             <button
                                 onClick={() => setShowPoolManager(true)}
                                 disabled={user?.role === 'staff' && user?.username !== 'admin'}
-                                className={`p-2 rounded-full text-slate-400 transition-colors ${(user?.role === 'staff' && user?.username !== 'admin') ? 'opacity-30 cursor-not-allowed' : 'hover:bg-slate-800'}`}
+                                className={`p-1.5 sm:p-2 rounded-full text-slate-400 transition-colors ${(user?.role === 'staff' && user?.username !== 'admin') ? 'opacity-30 cursor-not-allowed' : 'hover:bg-slate-800'}`}
                                 title={(user?.role === 'staff' && user?.username !== 'admin') ? "권한이 없습니다" : "기사 목록 관리"}
                             >
                                 <UserCog className="h-5 w-5" />
@@ -191,50 +198,40 @@ export default function DailyDispatchPage() {
 
                             <Link
                                 href="/settings"
-                                className="p-2 hover:bg-slate-800 rounded-full transition-colors text-slate-400"
+                                className="p-1.5 sm:p-2 hover:bg-slate-800 rounded-full transition-colors text-slate-400"
                                 title="설정"
                             >
                                 <Settings className="h-5 w-5" />
                             </Link>
 
                             <form action={logoutAction}>
-                                <button type="submit" className="p-2 hover:bg-slate-800 rounded-full transition-colors" title="로그아웃">
+                                <button type="submit" className="p-1.5 sm:p-2 hover:bg-slate-800 rounded-full transition-colors" title="로그아웃">
                                     <LogOut className="h-5 w-5 text-slate-400" />
                                 </button>
                             </form>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-3">
-                        <div className="flex-1 flex bg-slate-800/50 p-1 rounded-xl border border-slate-700/50">
-                            <button className="flex-1 bg-blue-600 text-white py-1.5 rounded-lg text-xs font-black shadow-lg shadow-blue-500/20">용차 배차</button>
-                            <Link
-                                href="/mobile/dispatch"
-                                className="flex-1 text-center text-slate-400 py-1.5 rounded-lg text-xs font-bold hover:text-white transition-colors"
-                            >
-                                결품 조회
-                            </Link>
-                        </div>
-
-                        <div className="flex items-center bg-slate-800 rounded-xl px-1 py-1 border border-slate-700/50">
-                            <button onClick={() => changeDate(-1)} className="p-1.5 text-slate-400 hover:text-white transition-colors">
-                                <ChevronLeft className="h-4 w-4" />
+                    <div className="flex justify-center">
+                        <div className="flex items-center bg-slate-800 rounded-xl px-2 py-2 border border-slate-700/50 w-full sm:w-auto sm:min-w-[200px] justify-center">
+                            <button onClick={() => changeDate(-1)} className="p-2 text-slate-400 hover:text-white transition-colors">
+                                <ChevronLeft className="h-5 w-5" />
                             </button>
                             <div
-                                className="flex items-center px-2 cursor-pointer active:scale-95 transition-transform"
+                                className="flex items-center px-4 cursor-pointer active:scale-95 transition-transform"
                                 onClick={() => dateInputRef.current?.showPicker()}
                             >
-                                <Calendar className="h-3.5 w-3.5 text-blue-400 mr-2" />
+                                <Calendar className="h-4 w-4 text-blue-400 mr-2.5" />
                                 <input
                                     ref={dateInputRef}
                                     type="date"
                                     value={selectedDate}
                                     onChange={(e) => setSelectedDate(e.target.value)}
-                                    className="bg-transparent text-sm font-bold border-none focus:ring-0 cursor-pointer text-slate-200 p-0 w-[110px]"
+                                    className="bg-transparent text-base font-bold border-none focus:ring-0 cursor-pointer text-slate-200 p-0 w-[125px]"
                                 />
                             </div>
-                            <button onClick={() => changeDate(1)} className="p-1.5 text-slate-400 hover:text-white transition-colors">
-                                <ChevronRight className="h-4 w-4" />
+                            <button onClick={() => changeDate(1)} className="p-2 text-slate-400 hover:text-white transition-colors">
+                                <ChevronRight className="h-5 w-5" />
                             </button>
                         </div>
                     </div>
