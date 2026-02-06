@@ -171,12 +171,14 @@ export default function DailyDispatchPage() {
                         </div>
 
                         <div className="flex items-center gap-1 sm:gap-2">
-                            <Link
-                                href="/mobile/dispatch"
-                                className="mr-1 sm:mr-2 bg-slate-800 text-slate-200 px-3 py-1.5 rounded-xl text-[11px] font-bold hover:bg-slate-700 transition-colors border border-slate-700/50"
-                            >
-                                결품 조회
-                            </Link>
+                            {user?.role === 'admin' && (
+                                <Link
+                                    href="/mobile/dispatch"
+                                    className="mr-1 sm:mr-2 bg-slate-800 text-slate-200 px-3 py-1.5 rounded-xl text-[11px] font-bold hover:bg-slate-700 transition-colors border border-slate-700/50"
+                                >
+                                    결품 조회
+                                </Link>
+                            )}
 
                             {user?.username === 'admin' && (
                                 <Link
