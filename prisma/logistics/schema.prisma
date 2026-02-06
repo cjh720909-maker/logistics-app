@@ -29,6 +29,12 @@ model Order {
   // 회사 구분 컬럼
   companyNameInTable String? @map("C_NAME")
 
+  // 직접 포함된 주소 및 연락처 정보
+  address         String?  @map("CB_ADDRESS")
+  phone           String?  @map("CB_PHONE")
+  hp              String?  @map("CB_HP")
+  routingBind     String?  @map("CB_BIND")
+
   // 관계 설정
   vehicle         Vehicle? @relation(fields: [driverName], references: [driverName])
   deliveryPoint   DeliveryPoint? @relation(fields: [deliveryPointId], references: [id])

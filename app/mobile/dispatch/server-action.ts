@@ -111,8 +111,6 @@ export async function getRealDispatchData(searchTerm: string, dateStr?: string):
     const rawOrders = await prisma.order.findMany({
       where: whereCondition,
       include: {
-        deliveryPoint: true,
-        vehicle: true,
         missouts: true,
       },
       orderBy: { id: 'asc' }
@@ -124,19 +122,15 @@ export async function getRealDispatchData(searchTerm: string, dateStr?: string):
       const dpId = order.deliveryPointId || -1;
       const cName = fromLegacy(order.customerName) || '알 수 없는 납품처';
 
-      // [수정] 기사명 표시 로직 변경
-      // CB_DRIVER는 코드로 사용하고, 실제 화면 표시는 CA_NAME(realDriverName)을 사용
-      let drvName = fromLegacy(order.vehicle?.realDriverName);
-      if (!drvName || drvName.trim() === '') {
-        // CA_NAME이 없으면 기존 CB_DRIVER 사용
-        drvName = fromLegacy(order.driverName) || '미지정';
-      }
+      // [최적화] 기사명 표시: 조인 없이 CB_DRIVER 직접 사용
+      const drvName = fromLegacy(order.driverName) || '미지정';
 
-      const drvPhone = fromLegacy(order.vehicle?.driverPhone) || '';
-      const vNo = fromLegacy(order.vehicle?.vehicleNo) || '';
-      const dNo = fromLegacy(order.vehicle?.dockNo) || '';
-      const cCode = fromLegacy(order.customerCode) || fromLegacy(order.deliveryPoint?.routingBind) || 'N/A';
-      const drvAddress = fromLegacy(order.deliveryPoint?.address) || '';
+      // [최적화] 연락처 및 주소: t_balju의 CB_HP, CB_PHONE, CB_ADDRESS 직접 사용
+      const drvPhone = fromLegacy(order.hp) || fromLegacy(order.phone) || '';
+      const vNo = ''; // 차량번호가 t_balju에 직접 노출되지 않는 경우 빈값 처리 (필요시 추후 필드 확인)
+      const dNo = '';
+      const cCode = fromLegacy(order.routingBind) || fromLegacy(order.customerCode) || 'N/A';
+      const drvAddress = fromLegacy(order.address) || '';
 
       const groupKey = `${dpId}_${cName}`;
 

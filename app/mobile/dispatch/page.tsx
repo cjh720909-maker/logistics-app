@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   Phone, Search, Truck, User, MapPin, ChevronRight, Package, Calendar, X, Loader2, ChevronLeft, Box, Scale, AlertCircle, ArrowLeft
 } from 'lucide-react';
@@ -43,6 +43,7 @@ export default function App() {
   const [selectedDispatch, setSelectedDispatch] = useState<DispatchGroup | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const dateInputRef = useRef<HTMLInputElement>(null);
 
   // 데이터 조회 함수
   const fetchData = useCallback(async (term: string, date: string) => {
@@ -175,7 +176,6 @@ export default function App() {
               <Truck className="h-5 w-5" /> 배차 조회
             </h1>
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold bg-blue-700 px-2.5 py-1 rounded-full">{selectedDate}</span>
               {(userRole === 'admin' || userRole === 'staff' || currentUser === 'admin') && (
                 <Link
                   href="/daily-dispatch"
@@ -210,9 +210,13 @@ export default function App() {
             <button onClick={() => changeDate(-1)} className="p-1.5 text-blue-100 hover:text-white transition-colors">
               <ChevronLeft className="h-5 w-5" />
             </button>
-            <div className="relative flex items-center gap-2">
+            <div
+              className="relative flex items-center gap-2 cursor-pointer"
+              onClick={() => dateInputRef.current?.showPicker()}
+            >
               <Calendar className="h-4 w-4 text-blue-200" />
               <input
+                ref={dateInputRef}
                 type="date"
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
@@ -228,7 +232,7 @@ export default function App() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-blue-300" />
             <input
               type="text"
-              placeholder="납품처명 또는 코드 검색..."
+              placeholder="납품처, 코드, 기사 검색..."
               className="w-full pl-10 pr-14 py-2.5 rounded-xl bg-blue-700/40 border border-blue-500 text-white placeholder:text-blue-300 focus:outline-none focus:bg-blue-700 text-sm font-medium transition-all"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}

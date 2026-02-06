@@ -41,6 +41,7 @@ export interface TransportDriver {
     name: string;
     phoneNumber: string;
     vehicleNumber: string | null;
+    transportCompany: string;
 }
 
 /**
@@ -102,12 +103,16 @@ export async function getDailyDispatchData(dateStr: string) {
             const legacyRealDriverName = fromLegacy(v.realDriverName);
             const driverPhoneFromMaster = fromLegacy(v.driverPhone); // CA_HP
 
-            // 조건 1: 기사명, 차량번호 중 '이룸' 또는 'OUTSOURCED' 포함 여부 확인
+            // 조건 1: 기사명, 차량번호 중 본인 업체명 또는 'OUTSOURCED' 포함 여부 확인
+            const userCompany = (session.companyName || '이룸').toUpperCase();
             const hasKeyword =
-                vehicleNo.toUpperCase().includes('이룸') ||
+                vehicleNo.toUpperCase().includes(userCompany) ||
                 vehicleNo.toUpperCase().includes('OUTSOURCED') ||
-                legacyRealDriverName.toUpperCase().includes('이룸') ||
-                legacyRealDriverName.toUpperCase().includes('OUTSOURCED');
+                legacyRealDriverName.toUpperCase().includes(userCompany) ||
+                legacyRealDriverName.toUpperCase().includes(userCompany.replace(' ', '')) || // 공백 제거 대응
+                legacyRealDriverName.toUpperCase().includes('OUTSOURCED') ||
+                // 어드민은 기본적으로 '이룸' 키워드도 같이 봄
+                (session.role === 'admin' && (vehicleNo.toUpperCase().includes('이룸') || legacyRealDriverName.toUpperCase().includes('이룸')));
 
             if (!hasKeyword) continue;
 
@@ -185,7 +190,7 @@ export async function getDailyDispatchData(dateStr: string) {
                 realDriverName: displayName,
                 vehicleNo: reg?.vehicleNumber || vehicleNo || '-',
                 vehicleType: 'outsourced',
-                transportCompany: '이룸',
+                transportCompany: userCompany,
                 phoneNumber: reg?.phoneNumber || null,
                 isRegistered: !!reg,
                 dispatchCount: Object.keys(customerSummary).length,
@@ -254,6 +259,43 @@ export async function deleteDriverFromPool(id: number) {
         return { success: true };
     } catch (error: any) {
         return { error: '삭제 실패: ' + error.message };
+    }
+}
+
+/**
+ * 기사 풀의 기사 정보를 수정합니다.
+ */
+export async function updateDriverInPool(id: number, formData: FormData) {
+    const session = await getSession();
+    if (!session) return { error: '권한이 없습니다.' };
+
+    const name = formData.get('name') as string;
+    const phoneNumber = formData.get('phoneNumber') as string;
+    const vehicleNumber = formData.get('vehicleNumber') as string;
+
+    try {
+        const driverPoolDelegate = (authDb as any).transportDriver;
+
+        // 본인 업체 소속인지 확인 (어드민 제외)
+        if (session.role !== 'admin') {
+            const existing = await driverPoolDelegate.findUnique({ where: { id } });
+            if (existing && existing.transportCompany !== session.companyName) {
+                return { error: '수정 권한이 없습니다.' };
+            }
+        }
+
+        await driverPoolDelegate.update({
+            where: { id },
+            data: {
+                name,
+                phoneNumber,
+                vehicleNumber: vehicleNumber || null
+            }
+        });
+        revalidatePath('/daily-dispatch');
+        return { success: true };
+    } catch (error: any) {
+        return { error: '수정 실패: ' + error.message };
     }
 }
 

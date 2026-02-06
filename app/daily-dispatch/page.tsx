@@ -1,16 +1,18 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
     Truck, Calendar, AlertTriangle, CheckCircle2,
     Search, User, Phone, Plus, Loader2, LogOut,
     FileText, UserCog, Settings, Trash2, X, Check,
-    ChevronDown, ChevronUp, MapPin, Package, Scale, Navigation2
+    ChevronDown, ChevronUp, MapPin, Package, Scale, Navigation2,
+    Edit2
 } from 'lucide-react';
 import {
     getDailyDispatchData,
     addDriverToPool,
     deleteDriverFromPool,
+    updateDriverInPool,
     matchDriver,
     updateDeliverySequence,
     type DailyDispatchInfo,
@@ -35,6 +37,8 @@ export default function DailyDispatchPage() {
     const [showPoolManager, setShowPoolManager] = useState(false);
     const [isActionPending, setIsActionPending] = useState(false);
     const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
+    const [editingDriver, setEditingDriver] = useState<TransportDriver | null>(null);
+    const dateInputRef = useRef<HTMLInputElement>(null);
 
     const fetchData = useCallback(async () => {
         setIsLoading(true);
@@ -73,6 +77,21 @@ export default function DailyDispatchPage() {
         setIsActionPending(true);
         const res = await deleteDriverFromPool(id);
         if (res.success) {
+            fetchData();
+        } else {
+            alert(res.error);
+        }
+        setIsActionPending(false);
+    };
+
+    const handleUpdateDriverInPool = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        if (!editingDriver) return;
+        setIsActionPending(true);
+        const formData = new FormData(e.currentTarget);
+        const res = await updateDriverInPool(editingDriver.id, formData);
+        if (res.success) {
+            setEditingDriver(null);
             fetchData();
         } else {
             alert(res.error);
@@ -138,29 +157,32 @@ export default function DailyDispatchPage() {
                             <Truck className="h-6 w-6" />
                         </div>
                         <div>
-                            <h1 className="text-xl font-bold leading-tight">용차 배차 대시보드</h1>
-                            <p className="text-slate-400 text-xs font-medium">당일 기사 정보 관리 시스템</p>
+                            <h1 className="text-xl font-bold leading-tight">용차 배차</h1>
+                            <p className="text-slate-400 text-[10px] font-medium">관리 시스템</p>
                         </div>
                     </div>
 
                     <div className="flex items-center gap-4">
                         <div className="flex bg-slate-900/50 p-1 rounded-xl border border-slate-700/50">
-                            <button className="bg-blue-600 text-white px-4 py-1.5 rounded-lg text-xs font-black shadow-lg shadow-blue-500/20">용차 배차</button>
                             <Link
                                 href="/mobile/dispatch"
-                                className="text-slate-400 px-4 py-1.5 rounded-lg text-xs font-bold hover:text-slate-200 transition-colors"
+                                className="bg-slate-800 text-slate-200 px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-slate-700 transition-colors"
                             >
                                 결품 조회
                             </Link>
                         </div>
 
-                        <div className="hidden sm:flex items-center bg-slate-800 rounded-full px-4 py-1.5 border border-slate-700">
+                        <div
+                            className="flex items-center bg-slate-800 rounded-full px-3 py-1.5 border border-slate-700 cursor-pointer active:bg-slate-700 transition-colors"
+                            onClick={() => dateInputRef.current?.showPicker()}
+                        >
                             <Calendar className="h-4 w-4 text-blue-400 mr-2" />
                             <input
+                                ref={dateInputRef}
                                 type="date"
                                 value={selectedDate}
                                 onChange={(e) => setSelectedDate(e.target.value)}
-                                className="bg-transparent text-sm font-bold border-none focus:ring-0 cursor-pointer text-slate-200"
+                                className="bg-transparent text-sm font-bold border-none focus:ring-0 cursor-pointer text-slate-200 p-0 w-[110px]"
                             />
                         </div>
 
@@ -281,12 +303,25 @@ export default function DailyDispatchPage() {
                                             </button>
                                         ) : (
                                             <div className="flex items-center gap-3">
-                                                <div className="flex flex-col items-end">
-                                                    <div className="flex items-center gap-1 text-green-600 font-bold text-[11px]">
-                                                        <CheckCircle2 className="h-3 w-3" />
-                                                        매칭완료
+                                                <div className="flex items-center gap-1.5">
+                                                    <div className="flex flex-col items-end">
+                                                        <div className="flex items-center gap-1 text-green-600 font-bold text-[11px]">
+                                                            <CheckCircle2 className="h-3 w-3" />
+                                                            매칭완료
+                                                        </div>
+                                                        <p className="text-[10px] text-slate-400 font-bold">{item.phoneNumber}</p>
                                                     </div>
-                                                    <p className="text-[10px] text-slate-400 font-bold">{item.phoneNumber}</p>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setIsRegistering(item);
+                                                        }}
+                                                        disabled={user?.role === 'staff'}
+                                                        className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-blue-500 transition-colors"
+                                                        title="매칭 수정"
+                                                    >
+                                                        <Edit2 className="h-3.5 w-3.5" />
+                                                    </button>
                                                 </div>
                                                 {item.phoneNumber && (
                                                     <a
@@ -302,73 +337,74 @@ export default function DailyDispatchPage() {
                                     </div>
                                 </div>
 
-                                {expandedRows[item.driverName] && (
-                                    <div className="bg-slate-50 border-x border-b border-slate-200 rounded-b-2xl p-3 sm:p-4 mb-3 animate-in slide-in-from-top-2 duration-200 overflow-hidden">
-                                        <div className="overflow-x-auto">
-                                            <div className="min-w-[300px]">
-                                                <table className="w-full text-left border-collapse">
-                                                    <thead>
-                                                        <tr className="border-b border-slate-200">
-                                                            <th className="pb-2 text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1 w-[40%]">순서 / 거래처 / 연락처</th>
-                                                            <th className="pb-2 text-[10px] font-black text-slate-400 uppercase tracking-widest w-[40%]">주소</th>
-                                                            <th className="pb-2 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right pr-1 w-[20%]">실적</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody className="divide-y divide-slate-100">
-                                                        {item.details.map((detail, idx) => (
-                                                            <tr key={idx} className="group transition-colors">
-                                                                <td className="py-3 pl-1 align-top">
-                                                                    <div className="flex items-start gap-2">
-                                                                        <div className="flex flex-col items-center gap-1">
-                                                                            <input
-                                                                                type="number"
-                                                                                defaultValue={detail.sequence === 999 ? '' : detail.sequence}
-                                                                                onBlur={(e) => {
-                                                                                    const val = parseInt(e.target.value);
-                                                                                    if (!isNaN(val) && val !== detail.sequence) {
-                                                                                        handleUpdateSequence(item.driverName, detail.cbCode || '', val);
-                                                                                    }
-                                                                                }}
-                                                                                className="w-10 h-7 text-center text-xs font-black border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:border-blue-400 focus:ring-1 focus:ring-blue-400 outline-none transition-all"
-                                                                                placeholder="-"
-                                                                            />
-                                                                        </div>
-                                                                        <div className="flex-1 min-w-0">
-                                                                            <p className="text-[13px] font-black text-slate-800 leading-tight mb-1 truncate">{detail.customerName}</p>
-                                                                            {detail.customerPhone ? (
-                                                                                <a href={`tel:${detail.customerPhone}`} onClick={(e) => e.stopPropagation()} className="flex items-center gap-1.5 text-xs text-blue-600 font-extrabold hover:underline">
-                                                                                    <Phone className="h-3 w-3 fill-blue-600" /> {detail.customerPhone}
-                                                                                </a>
-                                                                            ) : (
-                                                                                <p className="text-[10px] text-slate-300 font-bold">연락처 미등록</p>
-                                                                            )}
-                                                                        </div>
-                                                                    </div>
-                                                                </td>
-                                                                <td className="py-3 align-top text-left pr-2">
-                                                                    <p className="text-[11px] text-slate-600 leading-normal break-keep font-semibold">{detail.address || '-'}</p>
-                                                                </td>
-                                                                <td className="py-3 text-right pr-1 align-top">
-                                                                    <div className="flex flex-col items-end gap-1">
-                                                                        <p className="text-xs font-black text-slate-700">{detail.weight.toLocaleString()}<span className="text-[10px] text-slate-400 ml-0.5">kg</span></p>
-                                                                        <p className="text-xs font-black text-slate-700">{detail.qty.toLocaleString()}<span className="text-[10px] text-slate-400 ml-0.5">ea</span></p>
-                                                                    </div>
-                                                                </td>
+                                {
+                                    expandedRows[item.driverName] && (
+                                        <div className="bg-slate-50 border-x border-b border-slate-200 rounded-b-2xl p-3 sm:p-4 mb-3 animate-in slide-in-from-top-2 duration-200 overflow-hidden">
+                                            <div className="overflow-x-auto">
+                                                <div className="min-w-[300px]">
+                                                    <table className="w-full text-left border-collapse">
+                                                        <thead>
+                                                            <tr className="border-b border-slate-200">
+                                                                <th className="pb-2 text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1 w-[40%]">순서 / 거래처 / 연락처</th>
+                                                                <th className="pb-2 text-[10px] font-black text-slate-400 uppercase tracking-widest w-[40%]">주소</th>
+                                                                <th className="pb-2 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right pr-1 w-[20%]">실적</th>
                                                             </tr>
-                                                        ))}
-                                                    </tbody>
-                                                    <tfoot className="border-t border-slate-200 bg-slate-100/30">
-                                                        <tr>
-                                                            <td className="py-2 pl-2 text-[10px] font-black text-slate-500">합계</td>
-                                                            <td className="py-2 text-right text-xs font-black text-slate-800">{item.totalWeight.toLocaleString()} kg</td>
-                                                            <td className="py-2 text-right pr-2 text-xs font-black text-slate-800">{item.totalQty.toLocaleString()} ea</td>
-                                                        </tr>
-                                                    </tfoot>
-                                                </table>
+                                                        </thead>
+                                                        <tbody className="divide-y divide-slate-100">
+                                                            {item.details.map((detail, idx) => (
+                                                                <tr key={idx} className="group transition-colors">
+                                                                    <td className="py-3 pl-1 align-top">
+                                                                        <div className="flex items-start gap-2">
+                                                                            <div className="flex flex-col items-center gap-1">
+                                                                                <input
+                                                                                    type="number"
+                                                                                    defaultValue={detail.sequence === 999 ? '' : detail.sequence}
+                                                                                    onBlur={(e) => {
+                                                                                        const val = parseInt(e.target.value);
+                                                                                        if (!isNaN(val) && val !== detail.sequence) {
+                                                                                            handleUpdateSequence(item.driverName, detail.cbCode || '', val);
+                                                                                        }
+                                                                                    }}
+                                                                                    className="w-10 h-7 text-center text-xs font-black border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:border-blue-400 focus:ring-1 focus:ring-blue-400 outline-none transition-all"
+                                                                                    placeholder="-"
+                                                                                />
+                                                                            </div>
+                                                                            <div className="flex-1 min-w-0">
+                                                                                <p className="text-[13px] font-black text-slate-800 leading-tight mb-1 truncate">{detail.customerName}</p>
+                                                                                {detail.customerPhone ? (
+                                                                                    <a href={`tel:${detail.customerPhone}`} onClick={(e) => e.stopPropagation()} className="flex items-center gap-1.5 text-xs text-blue-600 font-extrabold hover:underline">
+                                                                                        <Phone className="h-3 w-3 fill-blue-600" /> {detail.customerPhone}
+                                                                                    </a>
+                                                                                ) : (
+                                                                                    <p className="text-[10px] text-slate-300 font-bold">연락처 미등록</p>
+                                                                                )}
+                                                                            </div>
+                                                                        </div>
+                                                                    </td>
+                                                                    <td className="py-3 align-top text-left pr-2">
+                                                                        <p className="text-[11px] text-slate-600 leading-normal break-keep font-semibold">{detail.address || '-'}</p>
+                                                                    </td>
+                                                                    <td className="py-3 text-right pr-1 align-top">
+                                                                        <div className="flex flex-col items-end gap-1">
+                                                                            <p className="text-xs font-black text-slate-700">{detail.weight.toLocaleString()}<span className="text-[10px] text-slate-400 ml-0.5">kg</span></p>
+                                                                            <p className="text-xs font-black text-slate-700">{detail.qty.toLocaleString()}<span className="text-[10px] text-slate-400 ml-0.5">ea</span></p>
+                                                                        </div>
+                                                                    </td>
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                        <tfoot className="border-t border-slate-200 bg-slate-100/30">
+                                                            <tr>
+                                                                <td className="py-2 pl-2 text-[10px] font-black text-slate-500">합계</td>
+                                                                <td className="py-2 text-right text-xs font-black text-slate-800">{item.totalWeight.toLocaleString()} kg</td>
+                                                                <td className="py-2 text-right pr-2 text-xs font-black text-slate-800">{item.totalQty.toLocaleString()} ea</td>
+                                                            </tr>
+                                                        </tfoot>
+                                                    </table>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                )}
+                                    )}
                             </div>
                         ))
                     )}
@@ -428,22 +464,47 @@ export default function DailyDispatchPage() {
                                 <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Active Pool ({driverPool.length})</h4>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     {driverPool.map(driver => (
-                                        <div key={driver.id} className="bg-white border border-slate-100 rounded-3xl p-5 flex items-center justify-between group hover:border-blue-200 transition-all">
-                                            <div className="flex items-center gap-4">
-                                                <div className="h-10 h-10 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 font-black group-hover:bg-blue-50 group-hover:text-blue-600 transition-all">
-                                                    {driver.name[0]}
+                                        <div key={driver.id} className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4 group hover:border-blue-200 transition-all">
+                                            {editingDriver?.id === driver.id ? (
+                                                <form onSubmit={handleUpdateDriverInPool} className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                                    <input name="name" defaultValue={driver.name} required className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm font-bold outline-none focus:ring-1 focus:ring-blue-500" />
+                                                    <input name="phoneNumber" defaultValue={driver.phoneNumber} required className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm font-bold outline-none focus:ring-1 focus:ring-blue-500" />
+                                                    <input name="vehicleNumber" defaultValue={driver.vehicleNumber || ''} className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm font-bold outline-none focus:ring-1 focus:ring-blue-500" placeholder="차량번호" />
+                                                    <div className="sm:col-span-3 flex justify-end gap-2 mt-2">
+                                                        <button type="button" onClick={() => setEditingDriver(null)} className="px-4 py-2 text-xs font-bold text-slate-400 hover:text-slate-600">Cancel</button>
+                                                        <button type="submit" disabled={isActionPending} className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-black shadow-lg shadow-blue-500/20">Save</button>
+                                                    </div>
+                                                </form>
+                                            ) : (
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="h-10 w-10 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 font-black group-hover:bg-blue-50 group-hover:text-blue-600 transition-all">
+                                                            {driver.name[0]}
+                                                        </div>
+                                                        <div>
+                                                            <p className="font-black text-slate-800">{driver.name}</p>
+                                                            <p className="text-[10px] text-slate-400 font-bold">{driver.phoneNumber}</p>
+                                                            {driver.vehicleNumber && <p className="text-[9px] text-blue-500 font-bold mt-0.5">{driver.vehicleNumber}</p>}
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-1">
+                                                        <button
+                                                            onClick={() => setEditingDriver(driver)}
+                                                            className="p-2 text-slate-300 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-all"
+                                                            title="수정"
+                                                        >
+                                                            <Edit2 className="h-4.5 w-4.5" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDeleteDriverFromPool(driver.id)}
+                                                            className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                                                            title="삭제"
+                                                        >
+                                                            <Trash2 className="h-4.5 w-4.5" />
+                                                        </button>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <p className="font-black text-slate-800">{driver.name}</p>
-                                                    <p className="text-[10px] text-slate-400 font-bold">{driver.phoneNumber}</p>
-                                                </div>
-                                            </div>
-                                            <button
-                                                onClick={() => handleDeleteDriverFromPool(driver.id)}
-                                                className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
-                                            >
-                                                <Trash2 className="h-4.5 w-4.5" />
-                                            </button>
+                                            )}
                                         </div>
                                     ))}
                                     {driverPool.length === 0 && (
@@ -547,6 +608,6 @@ export default function DailyDispatchPage() {
                     background: #cbd5e1;
                 }
             `}</style>
-        </div>
+        </div >
     );
 }
