@@ -6,7 +6,7 @@ import {
     Search, User, Phone, Plus, Loader2, LogOut,
     FileText, UserCog, Settings, Trash2, X, Check,
     ChevronDown, ChevronUp, MapPin, Package, Scale, Navigation2,
-    Edit2
+    Edit2, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import {
     getDailyDispatchData,
@@ -138,6 +138,13 @@ export default function DailyDispatchPage() {
     };
 
 
+    const changeDate = (days: number) => {
+        const target = new Date(selectedDate);
+        target.setDate(target.getDate() + days);
+        const newDate = target.toISOString().split('T')[0];
+        setSelectedDate(newDate);
+    };
+
     const toggleRow = (driverName: string) => {
         setExpandedRows(prev => ({
             ...prev,
@@ -150,74 +157,86 @@ export default function DailyDispatchPage() {
     return (
         <div className="min-h-screen bg-slate-50">
             {/* Header */}
-            <header className="bg-slate-900 text-white p-4 sticky top-0 z-30 shadow-lg">
-                <div className="max-w-4xl mx-auto flex justify-between items-center">
-                    <div className="flex items-center gap-3">
-                        <div className="bg-blue-600 p-2 rounded-lg">
-                            <Truck className="h-6 w-6" />
+            <header className="bg-slate-900 text-white sticky top-0 z-30 shadow-lg">
+                <div className="max-w-4xl mx-auto p-4">
+                    <div className="flex justify-between items-center mb-3">
+                        <div className="flex items-center gap-3">
+                            <div className="bg-blue-600 p-2 rounded-lg">
+                                <Truck className="h-5 w-5" />
+                            </div>
+                            <div>
+                                <h1 className="text-xl font-bold leading-tight">용차 배차</h1>
+                                <p className="text-slate-400 text-[10px] font-medium">관리 시스템</p>
+                            </div>
                         </div>
-                        <div>
-                            <h1 className="text-xl font-bold leading-tight">용차 배차</h1>
-                            <p className="text-slate-400 text-[10px] font-medium">관리 시스템</p>
+
+                        <div className="flex items-center gap-2">
+                            {user?.username === 'admin' && (
+                                <Link
+                                    href="/admin/users"
+                                    className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 rounded-xl text-xs font-black transition-all shadow-lg shadow-blue-500/20"
+                                >
+                                    <Plus className="h-3.5 w-3.5" /> <span className="hidden sm:inline">계정 생성</span>
+                                </Link>
+                            )}
+
+                            <button
+                                onClick={() => setShowPoolManager(true)}
+                                disabled={user?.role === 'staff' && user?.username !== 'admin'}
+                                className={`p-2 rounded-full text-slate-400 transition-colors ${(user?.role === 'staff' && user?.username !== 'admin') ? 'opacity-30 cursor-not-allowed' : 'hover:bg-slate-800'}`}
+                                title={(user?.role === 'staff' && user?.username !== 'admin') ? "권한이 없습니다" : "기사 목록 관리"}
+                            >
+                                <UserCog className="h-5 w-5" />
+                            </button>
+
+                            <Link
+                                href="/settings"
+                                className="p-2 hover:bg-slate-800 rounded-full transition-colors text-slate-400"
+                                title="설정"
+                            >
+                                <Settings className="h-5 w-5" />
+                            </Link>
+
+                            <form action={logoutAction}>
+                                <button type="submit" className="p-2 hover:bg-slate-800 rounded-full transition-colors" title="로그아웃">
+                                    <LogOut className="h-5 w-5 text-slate-400" />
+                                </button>
+                            </form>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-4">
-                        <div className="flex bg-slate-900/50 p-1 rounded-xl border border-slate-700/50">
+                    <div className="flex items-center gap-3">
+                        <div className="flex-1 flex bg-slate-800/50 p-1 rounded-xl border border-slate-700/50">
+                            <button className="flex-1 bg-blue-600 text-white py-1.5 rounded-lg text-xs font-black shadow-lg shadow-blue-500/20">용차 배차</button>
                             <Link
                                 href="/mobile/dispatch"
-                                className="bg-slate-800 text-slate-200 px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-slate-700 transition-colors"
+                                className="flex-1 text-center text-slate-400 py-1.5 rounded-lg text-xs font-bold hover:text-white transition-colors"
                             >
                                 결품 조회
                             </Link>
                         </div>
 
-                        <div
-                            className="flex items-center bg-slate-800 rounded-full px-3 py-1.5 border border-slate-700 cursor-pointer active:bg-slate-700 transition-colors"
-                            onClick={() => dateInputRef.current?.showPicker()}
-                        >
-                            <Calendar className="h-4 w-4 text-blue-400 mr-2" />
-                            <input
-                                ref={dateInputRef}
-                                type="date"
-                                value={selectedDate}
-                                onChange={(e) => setSelectedDate(e.target.value)}
-                                className="bg-transparent text-sm font-bold border-none focus:ring-0 cursor-pointer text-slate-200 p-0 w-[110px]"
-                            />
-                        </div>
-
-                        <button
-                            onClick={() => setShowPoolManager(true)}
-                            disabled={user?.role === 'staff' && user?.username !== 'admin'}
-                            className={`p-2 rounded-full text-slate-400 transition-colors ${(user?.role === 'staff' && user?.username !== 'admin') ? 'opacity-30 cursor-not-allowed' : 'hover:bg-slate-800'}`}
-                            title={(user?.role === 'staff' && user?.username !== 'admin') ? "권한이 없습니다" : "기사 목록 관리"}
-                        >
-                            <UserCog className="h-5 w-5" />
-                        </button>
-
-
-                        {user?.username === 'admin' && (
-                            <Link
-                                href="/admin/users"
-                                className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 rounded-xl text-xs font-black transition-all shadow-lg shadow-blue-500/20"
-                            >
-                                <Plus className="h-3.5 w-3.5" /> 계정 생성
-                            </Link>
-                        )}
-
-                        <Link
-                            href="/settings"
-                            className="p-2 hover:bg-slate-800 rounded-full transition-colors text-slate-400"
-                            title="설정"
-                        >
-                            <Settings className="h-5 w-5" />
-                        </Link>
-
-                        <form action={logoutAction}>
-                            <button type="submit" className="p-2 hover:bg-slate-800 rounded-full transition-colors" title="로그아웃">
-                                <LogOut className="h-5 w-5 text-slate-400" />
+                        <div className="flex items-center bg-slate-800 rounded-xl px-1 py-1 border border-slate-700/50">
+                            <button onClick={() => changeDate(-1)} className="p-1.5 text-slate-400 hover:text-white transition-colors">
+                                <ChevronLeft className="h-4 w-4" />
                             </button>
-                        </form>
+                            <div
+                                className="flex items-center px-2 cursor-pointer active:scale-95 transition-transform"
+                                onClick={() => dateInputRef.current?.showPicker()}
+                            >
+                                <Calendar className="h-3.5 w-3.5 text-blue-400 mr-2" />
+                                <input
+                                    ref={dateInputRef}
+                                    type="date"
+                                    value={selectedDate}
+                                    onChange={(e) => setSelectedDate(e.target.value)}
+                                    className="bg-transparent text-sm font-bold border-none focus:ring-0 cursor-pointer text-slate-200 p-0 w-[110px]"
+                                />
+                            </div>
+                            <button onClick={() => changeDate(1)} className="p-1.5 text-slate-400 hover:text-white transition-colors">
+                                <ChevronRight className="h-4 w-4" />
+                            </button>
+                        </div>
                     </div>
                 </div>
             </header>
